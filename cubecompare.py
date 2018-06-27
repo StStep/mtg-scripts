@@ -2,6 +2,9 @@
 ## Create a Decked Builder collection of the missing cards
 
 import io
+import scrython
+import time
+import csv
 
 class Card:
     def __init__(self, id, r, f):
@@ -15,7 +18,21 @@ def compare_collection(in_collection, cube, out_collection):
 
     missing = []
     for c in cubelist:
-        pass
+        time.sleep(0.01)
+        card = scrython.cards.Named(exact=c)
+        #search  = scrython.cards.Search(q=c)
+        #print(search .data())
+        have = False
+        print(card.name())
+        print(card.multiverse_ids())
+        for i in card.multiverse_ids():
+            if i in cards:
+                have = True
+                break;
+        if not have:
+            pass
+            #print('Don\'t have ' + card.name())
+            #missing.append(Card(card.multiverse_ids.first(), 1, 0))
 
     write_collection(out_collection, missing)
 
@@ -44,9 +61,10 @@ def read_collection(path):
 
 def get_cube_list(path):
     ret = []
-    with open(path) as f:
-        for line in f:
-            ret.append(line.split(',')[0][1:-1])
+    with open(path, newline='') as csvfile:
+        reader = csv.reader(csvfile)
+        for row in reader:
+            ret.append(row[0])
     return ret
 
 def write_collection(path, cards):
