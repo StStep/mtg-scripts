@@ -6,36 +6,42 @@ import scrython
 import time
 import csv
 
-class Card:
+class DeckedBuildCollEntry:
     def __init__(self, id, r, f):
         self.id = id
         self.r = r
         self.f = f
 
 def compare_collection(in_collection, cube, out_collection):
-    cards = read_collection(in_collection)
+    collentries = read_collection(in_collection)
     cubelist = get_cube_list(cube)
 
-    missing = []
+    missingentries = []
     for c in cubelist:
-        time.sleep(0.01)
-        card = scrython.cards.Named(exact=c)
-        #search  = scrython.cards.Search(q=c)
-        #print(search .data())
+        time.sleep(0.05)
         have = False
-        print(card.name())
-        print(card.multiverse_ids())
-        for i in card.multiverse_ids():
-            if i in cards:
+        for i in get_possible_mutliverse_ids(c):
+            if i in collentries:
                 have = True
                 break;
         if not have:
-            pass
-            #print('Don\'t have ' + card.name())
-            #missing.append(Card(card.multiverse_ids.first(), 1, 0))
+            print('Don\'t have ' + c)
+            #missingentries.append(Card(card.multiverse_ids.first(), 1, 0))
 
     write_collection(out_collection, missing)
 
+# Using name, return list of all printed Multiverse IDs
+def get_possible_mutliverse_ids(name):
+    search  = scrython.cards.Search(q='!"'+name+'"', unique='prints')
+    if search.total_cards() > len(search.data()):
+        print('Warning: Only looking at 1 page when more exist')
+
+    ret = []
+    for i in range(len(search.data())):
+        ret.extend(search.data()[i]['multiverse_ids'])
+    return ret
+
+# Read in Decked Builder collection
 def read_collection(path):
     ret = {}
     with open(path) as f:
@@ -46,7 +52,7 @@ def read_collection(path):
             sline = line[6:]
             if sline.startswith('id:'):
                 if id != 0:
-                    ret[id] = Card(id, reg, foil)
+                    ret[id] = DeckedBuildCollEntry(id, reg, foil)
                     id = 0
                     reg = 0
                     foil = 0
@@ -59,6 +65,7 @@ def read_collection(path):
                 pass
     return ret
 
+# Get cube list from CubeTutor CSV export
 def get_cube_list(path):
     ret = []
     with open(path, newline='') as csvfile:
@@ -67,10 +74,11 @@ def get_cube_list(path):
             ret.append(row[0])
     return ret
 
-def write_collection(path, cards):
+# Write out as Decked Builder collection
+def write_collection(path, collentries):
     f = io.open(path, 'w', newline='\n')
     f.write(u'doc:\n- version: 1\n- items:\n')
-    for c in cards:
+    for c in collentries:
         if c.r <= 0 and c.f <= 0:
             continue
 
