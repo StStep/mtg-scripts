@@ -5,6 +5,7 @@ import io
 import scrython
 import time
 import csv
+import shelve
 
 class DeckedBuildCollEntry:
     def __init__(self, id, r, f):
@@ -16,30 +17,46 @@ def compare_collection(in_collection, cube, out_collection):
     collentries = read_collection(in_collection)
     cubelist = get_cube_list(cube)
 
+    # Load cache
+    refids = shelve.open('refids')
+    refprice = shelve.open('refprice')
+
+    # Request Data
     missingentries = []
     for c in cubelist:
-        time.sleep(0.05)
+        # Load missing values
+        if not c in refids or not c in refprice:
+            time.sleep(0.05)
+            (refprice[c], refids[c]) = get_possible_mutliverse_ids(c)
         have = False
-        for i in get_possible_mutliverse_ids(c):
+        for i in refids[c]:
             if i in collentries:
                 have = True
                 break;
         if not have:
-            print('Don\'t have ' + c)
+            print('Don\'t have {}, cost {}'.format(c, refprice[c]))
             #missingentries.append(Card(card.multiverse_ids.first(), 1, 0))
+
+    # Save cache
+    refids.close()
 
     write_collection(out_collection, missing)
 
 # Using name, return list of all printed Multiverse IDs
+# and cheapest price
 def get_possible_mutliverse_ids(name):
-    search  = scrython.cards.Search(q='!"'+name+'"', unique='prints')
+    search = scrython.cards.Search(q='!"'+name+'" game:paper', unique='prints', order='usd', dir='asc')
     if search.total_cards() > len(search.data()):
         print('Warning: Only looking at 1 page when more exist')
 
     ret = []
+    price = None
     for i in range(len(search.data())):
         ret.extend(search.data()[i]['multiverse_ids'])
-    return ret
+        if price == None:
+            price = search.data()[i]['usd'] if 'usd' in search.data()[0] else None
+
+    return (price, ret)
 
 # Read in Decked Builder collection
 def read_collection(path):
@@ -91,3 +108,4 @@ def write_collection(path, collentries):
 
 if __name__ == '__main__':
     compare_collection('./StephensCollection.coll2', './cardkingdom_starter_cube_version_4.csv', './OutCollection.coll')
+    #print(get_possible_mutliverse_ids("Kongming, 'Sleeping Dragon'"))
