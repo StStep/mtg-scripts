@@ -52,7 +52,8 @@ def compare_collection(in_collection, cube, out_collection, out_ck):
 
     # Save cache
     refids.close()
-    print("Missing {} cards with estimate cost of {:0.2f} dollars".format(len(missingentries), missingcost))
+    print("Have {} of {} cards, Missing {} with estimate cost of {:0.2f} dollars"
+          .format(len(cubelist) - len(missingentries), len(cubelist), len(missingentries), missingcost))
 
     write_collection(out_collection, list(missingentries.values()))
     write_ck_deck(out_ck, missingnames)
