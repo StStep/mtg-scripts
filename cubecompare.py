@@ -22,27 +22,36 @@ def compare_collection(in_collection, cube, out_collection):
     refprice = shelve.open('refprice')
 
     # Request Data
-    missingentries = []
+    missingentries = {}
     missingcost = 0
     for c in cubelist:
         # Load missing values
         if not c in refids or not c in refprice:
             time.sleep(0.05)
             (refprice[c], refids[c]) = get_possible_mutliverse_ids(c)
+        # Loop through Mutliverse IDs, looking for ownership
         have = False
         for i in refids[c]:
-            if i in collentries:
+            if i in collentries and (collentries[i].r > 0 or collentries[i].f > 0):
                 have = True
+                if collentries[i].r > 0:
+                    collentries[i].r = collentries[i].r - 1
+                else:
+                    collentries[i].f = collentries[i].f - 1
                 break;
+        # If I don't have it, increment existing entry or add new one
         if not have:
-            missingentries.append(DeckedBuildCollEntry(refids[c][0], 1, 0))
+            if refids[c][0] in missingentries:
+                missingentries[refids[c][0]].r = missingentries[refids[c][0]].r + 1
+            else:
+                missingentries[refids[c][0]] = DeckedBuildCollEntry(refids[c][0], 1, 0)
             missingcost += float(refprice[c])
 
     # Save cache
     refids.close()
     print("Missing {} cards with estimate cost of {:0.2f} dollars".format(len(missingentries), missingcost))
 
-    write_collection(out_collection, missingentries)
+    write_collection(out_collection, list(missingentries.values()))
 
 # Using name, return list of all printed Multiverse IDs
 # and cheapest price
@@ -111,4 +120,4 @@ def write_collection(path, collentries):
     f.close()
 
 if __name__ == '__main__':
-    compare_collection('./StephensCollection.coll2', './cardkingdom_starter_cube_version_4.csv', './OutCollection.coll')
+    compare_collection('./StephensCollection.coll2', './dominaria_set_cube.csv', './OutCollection.coll2')
