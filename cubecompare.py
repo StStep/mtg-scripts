@@ -23,6 +23,7 @@ def compare_collection(in_collection, cube, out_collection):
 
     # Request Data
     missingentries = []
+    missingcost = 0
     for c in cubelist:
         # Load missing values
         if not c in refids or not c in refprice:
@@ -34,13 +35,14 @@ def compare_collection(in_collection, cube, out_collection):
                 have = True
                 break;
         if not have:
-            print('Don\'t have {}, cost {}'.format(c, refprice[c]))
-            #missingentries.append(Card(card.multiverse_ids.first(), 1, 0))
+            missingentries.append(DeckedBuildCollEntry(refids[c][0], 1, 0))
+            missingcost += float(refprice[c])
 
     # Save cache
     refids.close()
+    print("Missing {} cards with estimate cost of {:0.2f} dollars".format(len(missingentries), missingcost))
 
-    write_collection(out_collection, missing)
+    write_collection(out_collection, missingentries)
 
 # Using name, return list of all printed Multiverse IDs
 # and cheapest price
@@ -51,11 +53,13 @@ def get_possible_mutliverse_ids(name):
 
     ret = []
     price = None
+    # Prepend Multiverse ID used for price, otherwise append
     for i in range(len(search.data())):
-        ret.extend(search.data()[i]['multiverse_ids'])
-        if price == None:
-            price = search.data()[i]['usd'] if 'usd' in search.data()[0] else None
-
+        if price == None and 'usd' in search.data()[i]:
+            price = search.data()[i]['usd']
+            ret = search.data()[i]['multiverse_ids'] + ret
+        else:
+            ret.extend(search.data()[i]['multiverse_ids'])
     return (price, ret)
 
 # Read in Decked Builder collection
@@ -108,4 +112,3 @@ def write_collection(path, collentries):
 
 if __name__ == '__main__':
     compare_collection('./StephensCollection.coll2', './cardkingdom_starter_cube_version_4.csv', './OutCollection.coll')
-    #print(get_possible_mutliverse_ids("Kongming, 'Sleeping Dragon'"))
