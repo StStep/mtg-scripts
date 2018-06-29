@@ -13,7 +13,7 @@ class DeckedBuildCollEntry:
         self.r = r
         self.f = f
 
-def compare_collection(in_collection, cube, out_collection):
+def compare_collection(in_collection, cube, out_collection, out_ck):
     collentries = read_collection(in_collection)
     cubelist = get_cube_list(cube)
 
@@ -23,6 +23,7 @@ def compare_collection(in_collection, cube, out_collection):
 
     # Request Data
     missingentries = {}
+    missingnames = {}
     missingcost = 0
     for c in cubelist:
         # Load missing values
@@ -43,8 +44,10 @@ def compare_collection(in_collection, cube, out_collection):
         if not have:
             if refids[c][0] in missingentries:
                 missingentries[refids[c][0]].r = missingentries[refids[c][0]].r + 1
+                missingnames[c] = missingnames[c] + 1
             else:
                 missingentries[refids[c][0]] = DeckedBuildCollEntry(refids[c][0], 1, 0)
+                missingnames[c] = 1
             missingcost += float(refprice[c])
 
     # Save cache
@@ -52,6 +55,7 @@ def compare_collection(in_collection, cube, out_collection):
     print("Missing {} cards with estimate cost of {:0.2f} dollars".format(len(missingentries), missingcost))
 
     write_collection(out_collection, list(missingentries.values()))
+    write_ck_deck(out_ck, missingnames)
 
 # Using name, return list of all printed Multiverse IDs
 # and cheapest price
@@ -119,5 +123,11 @@ def write_collection(path, collentries):
             f.write(u'    - f: {}\n'.format(c.f))
     f.close()
 
+def write_ck_deck(path, cardnames):
+    f = io.open(path, 'w')
+    for k, v in cardnames.items():
+        f.write('{} {}\n'.format(v, k))
+    f.close()
+
 if __name__ == '__main__':
-    compare_collection('./StephensCollection.coll2', './dominaria_set_cube.csv', './OutCollection.coll2')
+    compare_collection('./StephensCollection.coll2', './dominaria_set_cube.csv', './OutCollection.coll2', './CK_deck.txt')
