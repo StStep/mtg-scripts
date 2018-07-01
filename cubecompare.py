@@ -13,7 +13,7 @@ class DeckedBuildCollEntry:
         self.r = r
         self.f = f
 
-def compare_collection(in_collection, cube, out_collection, out_ck):
+def compare_collection(in_collection, cube, out_missing_collection, out_have_collection):
     collentries = read_collection(in_collection)
     cubelist = get_cube_list(cube)
 
@@ -23,7 +23,7 @@ def compare_collection(in_collection, cube, out_collection, out_ck):
 
     # Request Data
     missingentries = {}
-    missingnames = {}
+    haveentries = {}
     missingcost = 0
     for c in cubelist:
         # Load missing values
@@ -31,32 +31,35 @@ def compare_collection(in_collection, cube, out_collection, out_ck):
             time.sleep(0.05)
             (refprice[c], refids[c]) = get_possible_mutliverse_ids(c)
         # Loop through Mutliverse IDs, looking for ownership
-        have = False
+        have_id = 0
         for i in refids[c]:
             if i in collentries and (collentries[i].r > 0 or collentries[i].f > 0):
-                have = True
+                have_id = i
                 if collentries[i].r > 0:
                     collentries[i].r = collentries[i].r - 1
                 else:
                     collentries[i].f = collentries[i].f - 1
                 break;
         # If I don't have it, increment existing entry or add new one
-        if not have:
+        if have_id == 0:
             if refids[c][0] in missingentries:
                 missingentries[refids[c][0]].r = missingentries[refids[c][0]].r + 1
-                missingnames[c] = missingnames[c] + 1
             else:
                 missingentries[refids[c][0]] = DeckedBuildCollEntry(refids[c][0], 1, 0)
-                missingnames[c] = 1
             missingcost += float(refprice[c])
+        else:
+            if have_id in haveentries:
+                haveentries[have_id].r = haveentries[have_id].r + 1
+            else:
+                haveentries[have_id] = DeckedBuildCollEntry(have_id, 1, 0)
 
     # Save cache
     refids.close()
     print("Have {} of {} cards, Missing {} with estimate cost of {:0.2f} dollars"
-          .format(len(cubelist) - len(missingentries), len(cubelist), len(missingentries), missingcost))
+          .format(len(haveentries), len(cubelist), len(missingentries), missingcost))
 
-    write_collection(out_collection, list(missingentries.values()))
-    write_ck_deck(out_ck, missingnames)
+    write_collection(out_missing_collection, list(missingentries.values()))
+    write_collection(out_have_collection, list(haveentries.values()))
 
 # Using name, return list of all printed Multiverse IDs
 # and cheapest price
@@ -131,4 +134,4 @@ def write_ck_deck(path, cardnames):
     f.close()
 
 if __name__ == '__main__':
-    compare_collection('./StephensCollection.coll2', './dominaria_set_cube.csv', './OutCollection.coll2', './CK_deck.txt')
+    compare_collection('./StephensCollection.coll2', './cardkingdom_starter_cube_version_4.csv', './MissingCollection.coll2', './HaveCollection.coll2')
