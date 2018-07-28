@@ -30,6 +30,7 @@ def compare_collection(in_collection, cube, out_missing_collection, out_have_col
         if not c in refids or not c in refprice:
             time.sleep(0.05)
             (refprice[c], refids[c]) = get_possible_mutliverse_ids(c)
+            print("Downloading " + c + "...")
         # Loop through Mutliverse IDs, looking for ownership
         have_id = 0
         for i in refids[c]:
